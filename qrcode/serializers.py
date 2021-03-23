@@ -5,15 +5,64 @@ from . import models as qrcode_models
 from django.contrib.auth import authenticate, get_user_model
 User = get_user_model()
 
-class QRCodesSerializer(serializers.ModelSerializer):
+from datetime import datetime, timezone
+
+
+class QRCodeSerializer(serializers.ModelSerializer):
+
+    qr_id = serializers.CharField(source='qr_id.unique_code')
+
+    default_error_messages = {
+        'code-not-exist': 'Unique code does not exist.',
+        'code-expired': 'Unique code has expired',
+        }
+
     class Meta:
         fields = (
+            'qr_id',
             'name',
             'email',
             'contact',
-            'qrcode',
         )
-        model = qrcode_models.QRCodes
+        model = qrcode_models.QRCode
+
+    def validate(self, data):
+
+        try:
+            qr_data =  data['qr_id']
+            qr_id = qrcode_models.UniqueID.objects.get(unique_code=qr_data['unique_code'])
+        except qrcode_models.UniqueID.DoesNotExist:
+            raise serializers.ValidationError(
+                self.error_messages['code-not-exist']
+            )
+
+        if qr_id:
+            today = datetime.now(timezone.utc)
+            if today > qr_id.expiry_date:
+                raise serializers.ValidationError(
+                    self.error_messages['code-expired']
+                )
+
+        return data
+
+    def create(self, validated_data):
+        qr_data = validated_data.pop('qr_id')
+        unique_code = qr_data['unique_code']
+
+        try:
+            qr_id = qrcode_models.UniqueID.objects.get(unique_code=qr_data['unique_code'])
+        except qrcode_models.UniqueID.DoesNotExist:
+            raise serializers.ValidationError(
+                self.error_messages['code-not-exist']
+            )
+        # qr = qrcode_models.QRCode.objects.create(qr_id=qr_id, **validated_data)
+        # return qr
+        qr, created = qrcode_models.QRCode.objects.update_or_create(qr_id=qr_id, defaults=validated_data)
+
+        if created:
+            return qr
+        else:
+            return qr
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

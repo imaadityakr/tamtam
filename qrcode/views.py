@@ -12,38 +12,20 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 
-# class IsSuperUser(IsAdminUser):
-#     def has_permission(self, request, view):
-#         return bool(request.user and request.user.is_superuser)
-
 class ListProduct(generics.ListCreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    queryset = qrcode_models.QRCodes.objects.all()
-    serializer_class = qrcode_serializer.QRCodesSerializer
-
-# class ListProduct(APIView):
-
-#     def get(self, request, *args, **kwargs):
-#         products = qrcode_models.QRCodes.objects.all()
-#         serializer = QuestionDetailPageSerializer(questions, many=True)
-#         return Response(serializer.data)
-
-#     def post(self, request, *args, **kwargs):
-#         serializer = QuestionDetailPageSerializer(data=request.data)
-#         if serializer.is_valid():
-#             question = serializer.save()
-#             serializer = QuestionDetailPageSerializer(question)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+    permission_classes = (
+        permissions.IsAuthenticated,
+        )
+    queryset = qrcode_models.QRCode.objects.all()
+    serializer_class = qrcode_serializer.QRCodeSerializer
 
 class LoginView(generics.GenericAPIView):
     serializer_class = qrcode_serializer.LoginSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (
+        permissions.AllowAny,
+        )
 
     def post(self, request, *args, **kwargs):
-        # import pdb; pdb.set_trace()
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.user
@@ -62,7 +44,7 @@ class LoginView(generics.GenericAPIView):
 class LogoutView(views.APIView):
     permission_classes = (
         permissions.IsAuthenticated,
-    )
+        )
 
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
